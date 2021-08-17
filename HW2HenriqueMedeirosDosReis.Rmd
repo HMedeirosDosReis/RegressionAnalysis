@@ -1,0 +1,210 @@
+---
+title: "Homework Assignment 2"
+author: "Henrique Medeiros Dos Reis"
+date: "2/9/2021"
+output: html_document
+---
+
+#Part A
+```{r}
+Ad_Revenue<-read.csv("AdRevenue.csv")
+View(Ad_Revenue)
+```
+
+**a-)** Develop a simple linear regression model based on least squares that predicts
+advertising revenue per page from circulation (i.e., feel free to transform
+either the predictor or the response variable or both variables). Ensure that
+you provide justification for your choice of model. 
+
+
+## a)
+*Ignore the part that says to transform one or both variables.*
+
+```{r}
+modLinear<-lm(AdRevenue~Circulation, data = Ad_Revenue)
+summary(modLinear)
+```
+Our multiple R-Squared is 0.8945, which is not bad, but maybe we can do better, lets see how the model looks like 
+
+```{r}
+plot(Ad_Revenue$Circulation, Ad_Revenue$AdRevenue, xlab = "Circulation", ylab = "Ad Revenue")+abline(modLinear, col="red", lty=3)
+```
+It doenst look like it is bad fitted, however we still need further analisys
+Now, lets look if we have some outliers.
+```{r}
+plot(Ad_Revenue$Circulation, rstandard(modLinear))+abline(h=c(-2,2), col="red")
+
+outliers <-which(abs(rstandard(modLinear))>2)
+outliers 
+```
+We do have 4 outliers, now we will need to check if they are leverage points.
+```{r}
+bdlvpts <- which(abs(rstandard(modLinear))>2 & hatvalues(modLinear)> 4/70)
+
+bdlvpts
+```
+If we look at this Point 49, this is a bad leverage point, the point 49 has an ad Revenue of 487662 and a Cirlculation of 23434. This is a very low outlier. Lets remove and see if it improves our model.
+```{r}
+ad_revenue2 <- Ad_Revenue[c(-49),]
+modLinear2 <- lm(AdRevenue~Circulation, data=ad_revenue2)
+summary(modLinear2)
+```
+This improved our model a little bit, our multiple R-Squared is not 0.9111.
+Let's graph and see how the model is now, also we will be using this model to predict values, since it is better than the first one.
+```{r}
+plot(Ad_Revenue$Circulation, Ad_Revenue$AdRevenue, xlab = "Circulation", ylab = "Ad Revenue")+abline(modLinear2, col="red", lty=3)
+```
+
+```{r}
+shapiro.test(rstandard(modLinear2))
+```
+
+The second model has a better multiple R-squared value, and the residuals are not normally distributed, which is a warning that this model might not be the best one. Later we will see with other degrees of models and see if we can find a better one. 
+
+
+
+## b)
+(b) Find a 95% prediction interval for the advertising revenue per page for
+magazines with the following circulations:
+ (i) 0.5 million
+ (ii) 20 million 
+```{r}
+predict(modLinear2, data.frame("Circulation" =0.5), interval="predict",level = 0.95)#(i)
+predict(modLinear2, data.frame("Circulation" =20), interval="predict",level = 0.95)#(ii)
+```
+The predicted value for the fit are 108.8 when we have 0.5 million, and 592.8 when we have 20 million. 
+
+
+## c)
+Describe any weaknesses in your model. 
+
+The clearest weakness in the model is the fact that the residuals are not normally distributed, and this can cause trouble sometimes. However, if we chose to use the model with the bad leverage point, we would face the same problem again, the only difference would be that we would be using a model with a worse multiple R-squared value, that's why it was worth removing it. Also, if we try another models, we may be able to find one with a multiple R-squared bigger than this
+
+
+
+#Part B
+
+## a)
+Develop a polynomial regression model based on least squares that directly
+predicts the effect on advertising reve-nue per page of an increase in circulation of 1 million people (i.e., do not transform either the predictor nor the
+response variable). Ensure that you provide detailed justification for your
+choice of model. [Hint: Consider polynomial models of order up to 3.] 
+
+```{r}
+modQuad<-lm(AdRevenue~Circulation+I(Circulation^2), data = Ad_Revenue)
+summary(modQuad)
+```
+Our multiple R-Squared is 0.901, which is already better than the linear model, but maybe there is a way to make it better, lets see how the model looks like. 
+```{r}
+disp.seq <- seq(0, max(Ad_Revenue$Circulation), lenght = 70)
+quadmodel.pred <-predict(modQuad, newdata = data.frame(Circulation=disp.seq))
+plot(Ad_Revenue$Circulation, Ad_Revenue$AdRevenue, xlab = "Circulation", ylab = "Ad Revenue")+lines(disp.seq, quadmodel.pred, lty=2,lwd=2, col="blue")
+```
+The graph does look much better than the linear model, but lets keep analizying. Let's look for outliers. 
+```{r}
+outliers <-which(abs(rstandard(modQuad))>2)
+outliers 
+```
+In this model, we are getting one more outliers than before, but maybe they are not bad leverage points, which would be betters.
+```{r}
+bdlvpts <- which(abs(rstandard(modQuad))>2 & hatvalues(modQuad)> 4/70)
+
+bdlvpts
+```
+We still got that point 49 is a bad leverage point, just as before. lets remove it and look it again. Also 2 and 4 are bad leverage points in this model. we will not remove them because they are different from 49, they are not so different from what the model looks like.
+```{r}
+modQuad2<-lm(AdRevenue~Circulation+I(Circulation^2), data = ad_revenue2)
+summary(modQuad2)
+```
+And just as before, our multiple R-squared has a better value than before. Let's look at the graph.
+```{r}
+disp.seq2 <- seq(0, max(Ad_Revenue$Circulation), lenght = 70)
+quadmodel.pred2 <-predict(modQuad2, newdata = data.frame(Circulation=disp.seq2))
+plot(Ad_Revenue$Circulation, Ad_Revenue$AdRevenue, xlab = "Circulation", ylab = "Ad Revenue")+lines(disp.seq2, quadmodel.pred2, lty=2,lwd=2, col="purple")
+```
+```{r}
+shapiro.test(rstandard(modQuad2))
+```
+Just as the Linear model, the second model has a better multiple R-squared value, and the residuals are not normally distributed, which is a warning that this model might not be the best one. Let's Now see how cubic models will perform in ours tests. 
+
+```{r}
+modCubic<-lm(AdRevenue~Circulation+I(Circulation^2)+I(Circulation^3), data = Ad_Revenue)
+summary(modCubic)
+```
+Once more, our Multiple R-Squared improved. Let's look at the graph.
+```{r}
+disp.seqC <- seq(0, max(Ad_Revenue$Circulation), lenght = 70)
+quadmodel.predC <-predict(modCubic, newdata = data.frame(Circulation=disp.seqC))
+plot(Ad_Revenue$Circulation, Ad_Revenue$AdRevenue, xlab = "Circulation", ylab = "Ad Revenue")+lines(disp.seqC, quadmodel.predC, lty=2,lwd=2, col="Green")
+```
+This graph is looking better than the quadratic one for sure. It looks that it is fitting better the data. But that is not enough to make conclusions, let's take a deeper look into it.
+```{r}
+outliers <-which(abs(rstandard(modCubic))>2)
+outliers 
+```
+In this model, we now have 6 outliers, let's see if these points are also bad leverage points. 
+```{r}
+bdlvpts <- which(abs(rstandard(modCubic))>2 & hatvalues(modCubic)> 4/70)
+
+bdlvpts
+```
+We do have 4 leverage points, lets see if it would improve our model if we remove them or not. 
+```{r}
+ad_revenueC <- Ad_Revenue[c(-2,-8,-20,-49),]
+modCubic2 <- lm(AdRevenue~Circulation+I(Circulation^2)+I(Circulation^3), data = ad_revenueC)
+summary(modCubic2)
+```
+This model, is giving a multiple R-Squared a little smaller than the previous model with the leverage points. Therefore I believe that keeping the leverage points will be a better choice.
+Let's also look the graph.
+```{r}
+disp.seqC2 <- seq(0, max(Ad_Revenue$Circulation), lenght = 70)
+quadmodel.predC2 <-predict(modCubic2, newdata = data.frame(Circulation=disp.seqC2))
+plot(Ad_Revenue$Circulation, Ad_Revenue$AdRevenue, xlab = "Circulation", ylab = "Ad Revenue")+lines(disp.seqC2, quadmodel.predC2, lty=2,lwd=2, col="Orange")
+```
+This graph also looks worse than the previous when we see how it fits the data. 
+Lastly, let's see how our residuals will look like in the chosen cubic model.
+```{r}
+shapiro.test(rstandard(modCubic))
+```
+Once more we got that the residuals are not normally distributed, however, the cubic model with the leverage points is the one that had the best performance when talking about the multiple R-squared values. Therefore, we will use this one.
+
+
+## b)
+
+```{r}
+predict(modCubic, data.frame("Circulation" =0.5), interval="predict",level = 0.95)
+predict(modCubic, data.frame("Circulation" =20), interval="predict",level = 0.95)
+```
+The predicted value for the fit are 84.17 when we have 0.5 million, and 499.5 when we have 20 million.
+
+## c)
+Describe any weaknesses in your model
+
+The two main weaknesses in this model are the fact that the residuals are not normally distributed. And that we have 6 outliers which 4 are bad leverage points. But on the other hand we have a much higher multuple R-squared value than before.
+
+
+
+#Part C
+
+## a)
+
+```{r}
+disp.seqC <- seq(0, max(Ad_Revenue$Circulation), lenght = 70)
+quadmodel.predC <-predict(modCubic, newdata = data.frame(Circulation=disp.seqC))
+plot(Ad_Revenue$Circulation, Ad_Revenue$AdRevenue, xlab = "Circulation", ylab = "Ad Revenue")+lines(disp.seqC, quadmodel.predC, lty=2,lwd=2, col="blue")+abline(modLinear2, col="red", lty=3)
+```
+Here we have a picture of the two models, we can see that the cubic model seems to fit a little better the data points than the linear, so lets compare their residual standard error, R-squared and p-values to see weather this is true.
+
+```{r}
+summary(modCubic)
+summary(modLinear2)
+```
+Now, let's compare them. While the cubic model has a Residual standard error of 34.06, the linear model has a Residual Standard error of 37.28, which is worse. Secondly, for the multiple R-squared values, we have 0.9333 for the cubic, and 0.9111 for the linear, making the cubic model also better here. Lastly, for the p-values, in both cases they are virtually 0, so they are the same. 
+ 
+
+## b)
+Compare the prediction intervals in Part A with those in Part B. In each case,decide which interval you would recommend. Give reasons to justify each choice.
+
+If I am working for the magazine, I would say for them to use the cubic model, since it predicts a higher value for Ad Revenue in the majority of the data points we have, which are the most common cases. In that model we can see that the magazines are making a little more money based on their circulation in values that are less than 13 millions. Which is the majority of the points that we have.  However, if the current magazine that I am working for has a circulation that is between 15 and 35, this model would actually be a little worse for them. However, also for bigger than 35, they probably be better than the linear, based on the money they will make out of the number of circulation. 
+
+e

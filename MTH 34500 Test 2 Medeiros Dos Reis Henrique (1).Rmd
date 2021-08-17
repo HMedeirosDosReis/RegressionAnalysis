@@ -1,0 +1,143 @@
+---
+title: "Test 2 Answer Key"
+author: "Henrique Medeiros Dos Reis"
+date: "March 19, 2021"
+output: html_document
+---
+
+#1. (15pts) 
+You have to make a linear model with two continuous quantitative variables, $x_1$ and $x_2$, and a single qualitative variable that has three levels: Good, Bad, and Ugly.  
+
+From an analysis of the data, it is believed that $x_2$ and the qualitative variable interact.  Come up with a linear model.  Your model should treat Good as the base level of the qualitative variable.
+
+
+Answer:
+Since we have 3 levels, we need to introduce two dummy variables.  To make good the base, we would have a model of the form:
+$y =  \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \beta_3x_3 + \beta_4 x_4 + e$
+Where we have the same $x_1$ and $x_2$ as before. Then we will also have:
+
+  $x_3 = \left\{ \begin{array}{ll}  1& \text{ if Bad} \\ 0& \text{ if not} \end{array}  \right.$
+  $x_4 = \left\{ \begin{array}{ll}  1& \text{ if Ugly} \\ 0& \text{ if not} \end{array}  \right.$
+
+#2. (25pts)  
+The built in data set "faithful" is a set that has the waiting time between eruptions of the Old Faithful Geyser along with the length of the eruption, both given in minutes.  We want to model the length of an eruption based on the waiting time.  To that end the model prob2_line was created.  It was decided to use **inverseResponsePlot**.  The value of $\lambda = 0.5$ was selected as minimizing $y^{\lambda} = \beta_0 + \beta_1x$. 
+```{r}
+
+View(faithful)
+```
+
+```{r}
+library("alr4")
+
+prob2_line <- lm(eruptions~waiting,data=faithful)
+
+inverseResponsePlot(prob2_line,c(0.5))
+ysqrt <- sqrt(faithful$eruptions)
+
+prob2_line2 <- lm(ysqrt~ waiting, data=faithful)
+```
+
+## a)(10pts) 
+If the wait time between eruptions is 45 minutes, find a 95% prediction interval for the length of the eruption.
+
+The prediction for the first model, without transformations, is:
+```{r}
+predict(prob2_line, newdata = data.frame(waiting=c(45)), interval = "prediction", level=0.95)
+```
+
+The prediction for the second model, after transforming the data, since we used the square root, now we have to square it back, then the prediction is:
+```{r}
+predict(prob2_line2, newdata = data.frame(waiting=c(45)), interval = "prediction", level=0.95)^2
+```
+
+## b)(15pts) 
+Plot the regression model given by prob2_line2.
+
+The plot is as follows, once we convert the data:
+```{r}
+disp.seq <- seq(0, max(faithful$waiting),length = 272)
+predictProb2_line2 <-predict(prob2_line2, newdata = data.frame(waiting =disp.seq))^2
+
+plot(faithful$waiting,faithful$eruptions)+lines(disp.seq, predictProb2_line2, col="blue", lwd=2, lty=2)
+```
+
+
+
+
+
+
+For Problem 3 and 4, you will be using the built-in data set "freeny".  The response variable is $y$, and the predictor variables are: lag.quarterly.revenue, price.index, income.level, market.potential.
+
+
+
+#3. (30pts) 
+Using "free.0" as a starting point, find "free.1" and "free.2", the first two steps in a step-up procedure.
+
+Answer:
+
+```{r}
+library(boot)
+
+
+free.0 <- lm(y~1, data=freeny)
+summary(free.0)
+```
+```{r}
+add1(free.0, scope= .~.+lag.quarterly.revenue+price.index+income.level+market.potential, test = "F")
+```
+It is possible to see that the largest F value is 8360.4, which gives us the smallest value, for the lag.quarterly.revenue, therefore we can add this to the free.0, and call it free.1. This is the first step up.
+```{r}
+free.1 <- update(free.0, formula=.~.+lag.quarterly.revenue)
+summary(free.1)
+```
+now we look add1 again to see the largest F-value, which is the smallest p-value, to step up to free.2
+```{r}
+add1(free.1, scope= .~.+lag.quarterly.revenue+price.index+income.level+market.potential, test = "F")
+```
+It is possible to see that the largest F-value is income.level, so we go ahead and add that to our model free.1 and call it free.2:
+
+```{r}
+free.2 <- update(free.1, formula=.~.+income.level)
+summary(free.2)
+```
+
+
+
+
+
+
+#4. (30pts) 
+Using "fullfree.0" as the starting point, perform a step-down procedure twice to find "fullfree.1" and fullfree.2"
+
+Answer:
+
+```{r}
+library(boot)
+
+fullfree.0 <- lm(y~lag.quarterly.revenue+price.index+income.level+market.potential, data=freeny)
+summary(fullfree.0)
+```
+```{r}
+drop1(fullfree.0, test="F")
+```
+we use the command "drop1" and look for the smallest F-value, the one with the largest p-value, which is lag.quarterly.revenue, so we can remove this from the model and call it fullfree.1
+
+```{r}
+fullfree.1 <-update(fullfree.0, .~. -lag.quarterly.revenue)
+summary(fullfree.1)
+```
+now we look into drop1 again:
+```{r}
+drop1(fullfree.1, test="F")
+```
+We can see that the biggest p-value is the market.potential one, so we go ahead and remove it from the fullfree.1 model, and call it fullfree.2:
+
+```{r}
+fullfree.2 <-update(fullfree.1, .~. -market.potential)
+summary(fullfree.2)
+```
+
+
+
+
+

@@ -1,0 +1,103 @@
+---
+title: "Homework Assignment 3"
+author: "Henrique Medeiros Dos Reis"
+date: "3/5/2021"
+output: html_document
+---
+
+First, we load the data:
+```{r}
+library(readr)
+Ad_Revenue <- read_csv("AdRevenue.csv",col_types = cols(AdRevenue = col_number(),  Circulation = col_number()))
+```
+#1 (5/5pts) The box-and-whisker plot from qplot was not necessary.
+Problem 1. (5pts) Are the data for the problem approximately normally distributed? If not, are
+they positively skewed or negatively skewed?
+
+In order to see weather is is positively skewed or negatively skewed: 
+```{r}
+library(ggplot2)
+qplot(Ad_Revenue$Circulation, Ad_Revenue$AdRevenue, geom ="boxplot")
+```
+```{r}
+library(car)
+scatterplot(AdRevenue~Circulation,xlab = "Circulation",ylab="Ad Revenue",data=Ad_Revenue,smooth=FALSE, col="red")
+
+linearMod <-lm(AdRevenue~Circulation, data = Ad_Revenue)
+```
+We can see from both the ggplot and the scatter plot that the data is positively skewed. In the Ad Revenue and in the Circulation 
+
+
+
+#2 (10/10pts)
+Problem 2. (10pts) Find λ so that $y^λ = β_0 + β_1x$ has minimal RSS.
+
+in order to find the value of $\lambda$ that minimizes the RSS, we need to call the inverseResponsePlot method:
+```{r}
+library(alr4)
+circulationMod <- lm(AdRevenue~Circulation, data=Ad_Revenue)
+inverseP <- inverseResponsePlot(circulationMod,lam = c(-1,0,1))
+inverseP
+```
+From this plot we can see that the perfect $\lambda$ is equal to 1.431136. Therefore, lets round it to 1.5, which is close enough to the perfect value. 
+
+our model then will look like this:
+```{r}
+AdRevenueT <-Ad_Revenue$AdRevenue^{1.5}
+AdTline <- lm(AdRevenueT ~ Ad_Revenue$Circulation)
+summary(AdTline)
+```
+
+To see how this line fits the data with the transformed y-values, we graph:
+```{r}
+plot(Ad_Revenue$Circulation,AdRevenueT) + abline(AdTline,col="blue")
+```
+
+
+
+#3 (10/10pts)
+Problem 3. (10pts) Find ($λ_x, λ_y$) to transform $y = β_0 + β_1x$ into $y^{λ_y} = β_0 + β_1x^{λ_x}$ so that both $x^{λ_x}$ and $y^{λ_y}$ are approximately normally distributed. Provide visual evidence that this is true.
+
+
+We try to transform both variables at once:
+```{r}
+summary(p2 <- powerTransform(cbind(Ad_Revenue$Circulation,Ad_Revenue$AdRevenue)~1,data=Ad_Revenue,family="bcPower"))
+```
+Both rounded powers are not zero, therefore we raise the data to these values, first the AdRevenue to the power of -0.5, and the Circulation to the power of -0.33
+
+```{r}
+AdRevenueT <-Ad_Revenue$AdRevenue^{-0.5}
+CirculationT <- Ad_Revenue$Circulation^{-0.33}
+
+scatterplot(AdRevenueT~CirculationT, smooth=FALSE)
+summary(adTCTline<-lm(AdRevenueT~CirculationT, data=Ad_Revenue))
+```
+Finally, we can see that now the data is normally disrtibuted. looking at the box plot comming from the scatter plot, we can easily see that it is right in the middle and the whikers also have the same size.
+
+
+
+#4 (8/15pts) You needed to plot the graphs from both Part 1 and Part 2 on the same graph.  I cannot figure out what is going on in Line 93.  I made some changes but could not get anything to work correctly.
+Compare the regression models found in Problem 2 and Problem 3 with the
+cubic model that you found in Part B of Homework Assignment 2. Make a graph of all three
+models, neatly labeled, to see what happens when 0 < x < 5 and 0 < y < 400. Decide which
+provides a better model over the entire range of the data. Give reasons to justify your choice.
+
+
+```{r}
+modCubic<-lm(AdRevenue~Circulation+I(Circulation^2)+I(Circulation^3), data = Ad_Revenue)
+
+disp.seqC <- seq(0, 5, length = 70)
+cubic.predC <-predict(modCubic, newdata = data.frame(Circulation=disp.seqC))
+
+
+plot(Ad_Revenue$Circulation, Ad_Revenue$AdRevenue, xlab = "Circulation", ylab = "Ad Revenue",xlim=c(0,5), ylim=c(0,400))+lines(disp.seqC, cubic.predC, lty=2,lwd=2, col="Green")+lines(disp.seqC, exp((adTCTline$coefficients[1])+ adTCTline$coefficients[2]^exp(disp.seqC))^{-1/0.33},col="blue")+abline(AdTline,col="red")
+
+
+```
+
+I believe that this is incorrect. But I could not find a way to solve it. Even when I try to solve for y with the equation $y^{-0.33} = \beta_0 + \beta_1 x^{-1/2}$. I couldnt get it work in any way. 
+
+
+
+
+

@@ -1,0 +1,82 @@
+---
+title: "HW 5"
+author: "Henrique Medeiros Dos Reis"
+date: "4/14/2021"
+output: html_document
+---
+
+A)
+ Describe in detail two major concerns that potentially threaten the validity 
+of the analysis implied by the author’s comments.
+First, we load the data. 
+```{r}
+library(readr)
+playoffs <- read_csv("playoffs.csv")
+attach(playoffs)
+View(playoffs)
+```
+Let's take a look on what the plot of the market size (population) versus the playoffs appearances looks like.
+```{r}
+plot(Population,PlayoffAppearances,xlab = "Population",ylab = "Playoff Appearances")
+```
+Then let's see the simple linear model and see how it can fit the data. 
+```{r}
+m1<-lm(PlayoffAppearances~Population, data=playoffs)
+summary(m1)
+```
+This model does not seem to be a very good model. Our p-value is a little big, which can be the first problem in this simple model, which would lead us to not reject the null hypothesis. Now, let's look how the graph looks like
+```{r}
+plot(Population,PlayoffAppearances,xlab = "x, Population",ylab = "Y, Playoff Appearances") + abline(m1)
+```
+This model does not seem to fit the data very well, it is possible that we have a lot of points that are very far from the line.
+
+Let's now look for some bad leverage points: 
+```{r}
+plot(rstandard(m1),ylim=c(-3,3)) + abline(h=c(-2,2),col="red", lty=2)
+```
+From this plot, we can see that there are two points that are off the cut, and both of them are above. Let's check to see weather these two points are really bad leverage points or if they should be in this model.
+
+```{r}
+badlvpts <- which(x=hatvalues(m1) > 4/30 & abs(rstandard(m1))>2)
+
+badlvpts
+```
+Point two is a bad leverage point, so it is probably being a problem for our model as well. Which might as well be the problem that the author might have ran into. We can also see if we have outliers for this model, which would also be a problem for the model that was made.
+
+```{r}
+outliers <- which(abs(rstandard(m1))>2)
+outliers
+```
+Yankees and Tigers are outliers, which means another problem in this model. Which together with the problems before can easily threaten the validity of the current model being used.
+
+
+
+B)
+ Using an analysis which is appropriate for the data, show that there is very 
+strong evidence of a relationship between Y and x 
+
+```{r}
+logisticm1 <-glm(formula=cbind(PlayoffAppearances,n-PlayoffAppearances)~Population, family = binomial(),data=playoffs)
+summary(lm1)
+
+```
+Now that we have a model, let's graph it with the data and see how it performs.
+```{r}
+x <-seq(0,20,0.05)
+y <- 1/(1+exp(-1*(logisticm1$coeff[1]+logisticm1$coeff[2]*x)))
+plot(playoffs$Population,playoffs$Proportion)
+lines(x,y)
+```
+This does not look much better than the linear model. It is actually very similar to it. So let's go ahead and check for the p-values and see if that can tell us something. 
+```{r}
+pchisq(logisticm1$deviance,logisticm1$df.residual,lower=FALSE)
+pchisq(116.22,28,lower=FALSE)
+```
+We are testing: $H_0:$ the logistic model is apropriate againt $H_A:$ the lostitic model is not appropriate 
+
+With a p-value that is virtually 0, we can conclude that  the logistic regression in not appropriate and reject the null hypothesis. Stating that the linear model represents the relationship between X and Y better than the logistic one. 
+
+
+
+
+

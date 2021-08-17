@@ -1,0 +1,120 @@
+---
+title: "MTH 34500 Test 1"
+author: "Henrique Medeiros Dos Reis"
+date: "2/19/2021"
+output: html_document
+---
+
+#1. (10pts) List the four assumptions that we make about the model when we stat simple linear analysis.
+
+1: Y is related to x, meaning that there exists a linear relationship between the independent variable x and the depended variable y.
+2: The residuals are independent. 
+3: The errors have a common variance $\sigma^2$.
+4: The residuals of the model are normally distributed with a mean of 0 and variance $\sigma^2$
+
+
+#2. (10pts) Describe the difference between a positive linear relationship and a negative linear relationship.
+We have a perfect positive linear relationship when r=1, and it means that the slope of the best fit line is positive. And when we have a perfect negative linear relationship when r=-1, meaning that the slope of the best fit line will be negative. The closer our r gets to 0, it shows less linear correlation between the values. weather the r and slope are positive or negative.  
+
+
+
+
+#3. A researcher is investigating a problem that she feels is modeled by the line $y = 200 - 5x$, using a confidence level of $\alpha = 0.05$.  She has collected 30 pairs of data.
+
+##a) (5pts) 
+If necessary, modify the below code to import the data for this problem.  Make sure you call the data "Problem_3_Data".
+```{r}
+library(readxl)
+Problem_3_Data <- read_excel("Test1DataSets.xlsx",sheet = "Problem3Data")
+View(Problem_3_Data)
+```
+
+##b)(5pts) 
+
+Find the line of best fit for the data.  Write the line in the form $y = \beta_0 + \beta_1 x$.
+```{r}
+problem3LinearMod <- lm(Y~X,data=Problem_3_Data)
+summary(problem3LinearMod)
+```
+The best fit line for this data is $y = 209.5 - 5.19x$
+
+
+##c)(10pts) 
+Test $H_0 \beta_1 = -5$ against $H_A:\beta_1 \neq -5$.  Your conclusion should be in complete sentences.
+
+
+This is a two-tailed test with test value ${\displaystyle t = \frac{\widehat{\beta}_1 - \beta_1}{\text{se}\left(\widehat{\beta}_1\right)} = \frac{-5.1942 - (-5)}{0.2278}}$.  
+The p-value is 2*Pr(>|t|).
+```{r}
+pt(abs((-5.1942-(-5))/0.2278),28,lower.tail = FALSE)*2
+```
+Since this p-value is bigger than f $\alpha$. we do not reject the null hypotheses and in conclusion we can accept the hypothesis that $\beta_1 = -5$.
+
+
+##d)(10pts) 
+Test $H_0 \beta_0 = 200$ against $H_A:\beta_0 \neq 200$.  Your conclusion should be in complete sentences.
+```{r}
+pt(abs((209.5020-(200))/5.0195),28,lower.tail = FALSE)*2
+```
+Since this p-value is bigger $\alpha$, even if it is just by a little bit. we do not reject the null hypotheses and in conclusion we can accept the hypothesis that $\beta_0 = 200$.
+
+##e)(10pts)
+Graph the data and the best fit line.  Clearly label the line on the graph, rounding to one decimal place.
+
+
+```{r}
+plot(Problem_3_Data)+abline(problem3LinearMod,col="blue",lwd=2, lty=2)+text(x=35,y=80,"y = 209.5 - 5.2x")
+```
+
+
+
+
+
+
+
+#4 In this problem, you are working for a data analysis company that his given you a bunch of data to analyze.
+
+
+## a) (5pts)
+If necessary, modify the below code to import the data for this problem.  Make sure you call the data "Problem_4_Data" 
+```{r}
+library(readxl)
+Problem_4_Data <- read_excel("Test1DataSets.xlsx",sheet = "Problem4Data")
+View(Problem_4_Data)
+```
+
+##b) (5pts)
+Your client wants the data fitted with the model $y = \beta_0 + \beta_1 x + e$, because he likes lines.  Find the line of best fit for the data.  Write the line in the form $y = \beta_0 + \beta_1 x$.
+```{r}
+Problem4Linear<-lm(Y~X, data = Problem_4_Data)
+summary(Problem4Linear)
+plot(Problem_4_Data)+abline(Problem4Linear,col="red",lwd=2, lty=2)+text(x=15,y=80,"y = 116.59 - 0.46 x")
+```
+The best fit line for this data is $y = 116.59 - 0.46 x$
+
+
+##c) (20pts)
+Your boss feels that a quadratic model is better.  She tells you to find a quadratic model, graph it and the data, and then explain why the quadratic model is better using only the information in the summary of the line  and the quadratic model.  Write the quadratic model in the form $y = \beta_0 + \beta_1 x +\beta_2 x^2$.  
+```{r}
+Problem4Quad <- lm(Y~X + I(X^2),data=Problem_4_Data)
+summary(Problem4Quad)
+```
+```{r}
+disp.seq <- seq(min(Problem_4_Data$X), max(Problem_4_Data$X))
+quadmodel.pred <-predict(Problem4Quad, newdata = data.frame(X=disp.seq))
+plot(Problem_4_Data)+lines(disp.seq, quadmodel.pred, lty=3,lwd=2, col="purple")+text(x=50,y=120,"y = 97.37 + 1.38 x - 0.03 x^2")
+```
+
+The best fit line for this data is $y = 97.37 + 1.38 x - 0.03 x^2$
+
+We can see by comparing both the summaries of the lines that our multiple R-squared value for the Quadratic model is almost twice as big as the the multiple R-squared for the linear model. This is already showing that the Quadratic model is better. But when we also analyze the the residual standard error, we can see that while the quadratic model has a 15.66 value, the linear model has 16.81 as the residual standard error, which is not a big difference, but also shows that the Quadratic model is better for fitting the data. Lastly, when we compare both graphs, we can easily see that the quadratic model is fitting the data points better than the linear model.In the linear model it is almost not possible to see the line fitting the data.
+
+
+##d) (10pts)
+Are the residuals for the quadratic model normally distributed?
+
+```{r}
+shapiro.test(rstandard(Problem4Quad))
+```
+With p-value = 0.6548, we would definitely assume that the residuals in this quadratic model are normally distributed.
+

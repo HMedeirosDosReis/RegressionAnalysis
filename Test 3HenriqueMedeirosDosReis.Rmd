@@ -1,0 +1,134 @@
+---
+title: "Test 3 Answer Key"
+author: "Henrique Medeiros Dos Reis"
+date: "April 16, 2021"
+output: html_document
+---
+The following data on the top 196 Professional Golfers Association (PGA) tour can be found on the book website and in the Canvas shell in the file pgatour2006.csv:
+
+$Y$, PrizeMoney = average prize money per tournament
+$x_1$, DrivingAccuracy is the percent of time a player is able to hit the fairway with his tee shot.
+$x_2$, GIR, Greens in Regulation is the percent of time a player was able to hit the green in regulation   A green is considered hit in regulation if any part of the ball is touching the putting surface and the number of strokes taken is two or less than par.
+$x_3$, PuttingAverage, measures putting performance on those holes where the green in hit in regulation (GIR).  By using greens hit in regulation the effects of chipping close and one putting are eliminated.
+$x_4$, BirdieConversion is the percent of time a player makes birdie or better after hitting the green in regulation
+$x_5$, SandSaves is the percent of time a player was able to get "up and down" once in a greenside sand bunker.
+$x_6$, Scrambling is the percent of time that a player misses the green in regulation but still makes par or better.
+$x_7$, PuttsPerRound is the average total number of putts per round.
+
+Throughout this problem, we will use $\alpha = 0.05$.
+
+
+
+
+```{r}
+library(car)
+library(alr4)
+library(readr)
+
+
+pgatour2006 <- read_csv("pgatour2006.csv")
+attach(pgatour2006)
+View(pgatour2006)
+```
+
+During the rest of the test, you will make use of the following two models:
+```{r}
+pga1 <- lm(PrizeMoney ~ DrivingAccuracy+GIR+PuttingAverage+BirdieConversion+SandSaves+Scrambling+PuttsPerRound, data=pgatour2006)
+
+pga.null <- lm(log(PrizeMoney) ~1, data = pgatour2006)
+
+```
+
+
+
+#a) (20pts) A statistician from Australia has recommended to you that you not transform any of the predictor variables but that  you transform $Y$ using the log transformation.  Do you agree with this recommendation?  Give reasons to support your answer.
+
+First, we perform some data analysis.  Below shows a scatter plot matrix of the response variable (PrizeMoney) and all predictor variables:
+
+```{r}
+pairs(PrizeMoney~ DrivingAccuracy+GIR+PuttingAverage+BirdieConversion+SandSaves+Scrambling+PuttsPerRound)
+```
+The response variable is highly skewed. However, the predictor variables seem normally distributed. I would agree with the Australian statistician and transform only the response variable. When we transform $Y$, we have: 
+```{r}
+pairs(log(PrizeMoney)~ DrivingAccuracy+GIR+PuttingAverage+BirdieConversion+SandSaves+Scrambling+PuttsPerRound)
+```
+Which shows that only transforming the response variable is enough to make the pairwise relationship above much more linear than before. Making the recommendation of transforming only the response variable correct.
+We can also check the standardized residuals:
+```{r}
+m1<-lm(log(PrizeMoney) ~ DrivingAccuracy+GIR+PuttingAverage+BirdieConversion+SandSaves+Scrambling+PuttsPerRound, data=pgatour2006)
+par(mfrow=c(2,2))
+StanRes1 <- rstandard(m1)
+plot(DrivingAccuracy,StanRes1,ylab="Standardized Residuals")
+plot(GIR,StanRes1,ylab="Standardized Residuals")
+plot(PuttingAverage,StanRes1,ylab="Standardized Residuals")
+plot(BirdieConversion,StanRes1,ylab="Standardized Residuals")
+plot(SandSaves,StanRes1,ylab="Standardized Residuals")
+plot(Scrambling,StanRes1,ylab="Standardized Residuals")
+plot(PuttsPerRound,StanRes1,ylab="Standardized Residuals")
+plot(m1$fitted.values,StanRes1,ylab="Standardized Residuals",xlab="Fitted Values")
+```
+All of these show a random pattern, which suggests that our model is valid after transforming only the response variable.
+
+
+#b) (10pts) Starting with the model pga.null, find the model with the smallest AIC and call it pga.step1.
+
+```{r}
+pga.step1 <- step(pga.null, scope= ~+DrivingAccuracy+GIR+PuttingAverage+BirdieConversion+SandSaves+ Scrambling+ PuttsPerRound)
+```
+Therefore, the final model is: 
+```{r}
+summary(pga.step1)
+```
+
+
+
+#c) (10pts) Starting with the model pga.null, find the model with the smallest BIC and call it pga.step2.  
+
+```{r}
+
+pga.step2 <- step(pga.null, scope= ~+DrivingAccuracy+GIR+PuttingAverage+BirdieConversion+SandSaves+Scrambling+PuttsPerRound,k=log(196))
+
+```
+Therefore, our model is:
+
+```{r}
+summary(pga.step2)
+```
+
+
+#d) (20pts) Which model do you feel is better, pga.step1 or pga.step2?  Give reasons to support your answer.
+
+When using the BIC results, we finish having a model with only 3 predictor variables, which all of them are statistically significant. However, when we try to work with the AIC, we get a result where we end up with 2 out of the 5 predictor variables not being statistically significant. Therefore, I would sat that the pga.step2 is a better model than the pga.step1, since we have a simpler model, which is easier to compute, and all the predictor variables are statistically significant.
+
+
+
+#e) (15pts) Does model pga1 exhibit any signs of multicollinearity?  
+
+In order to check weather we have signs of multicollinearity, we check the VIF:
+```{r}
+vif(pga1)
+```
+Since three of our variables have VIFs larger than 5, we conclude that multicollinearity exists.
+
+
+
+#f) (15pts) Find and identify by name all golfers who are leverage points for the model pga1.
+
+```{r}
+badlvpts <- which(x=hatvalues(pga1) > 4/196 & abs(rstandard(pga1))>2)
+
+badlvpts
+```
+The leverage points for these model are 2, 63, 90, and 178. They are correspondent to the following golfers:
+Adam Scott, Geoff Ogilvy, Jim Furyk, and Tiger Woods.
+
+#g) (10pts) If the odds of an event are 9:11, what is the probability of the event happening?
+The odds are given by the formula:
+$\frac{\theta}{1-\theta}$
+
+```{r}
+odds<-9/(9+11)
+odds
+```
+$\theta=0.45$
+Therefore, the event will occur in 9 of 20, so 0.45.

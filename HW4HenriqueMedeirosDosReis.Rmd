@@ -1,0 +1,164 @@
+---
+title: "Homework 4"
+author: "Henrique Medeiros Dos Reis"
+date: "3/18/2021"
+output: html_document
+---
+
+#1. (16/20pts) Your line when d=1 should be y=2.21+0.17x, and you need to explicitly state the null and alternative hypotheses for the ANOVA test.
+We load the data as "overdue":
+```{r}
+library(readr)
+overdue <- read_csv("Overdue.csv")
+View(overdue)
+```
+a-)
+
+Now, lets see how the data looks like before doing anything, separated by types:
+```{r}
+library(ggplot2)
+ptype <- rep(NA, length(96))
+ptype[overdue$Type=="RESIDENTIAL"] <-"RESIDENTIAL"
+ptype[overdue$Type=="COMMERCIAL"] <-"COMMERCIAL"
+
+qplot(overdue$BILL,overdue$LATE,color=ptype, shape=ptype)
+```
+b-)
+
+We try to find the two lines that will fit the data. . Keeping in mind that we need to use the qualitative variables that we just separated above, which is the separated data.
+
+```{r}
+model1<-lm(LATE~BILL+Type+Type:BILL, data=overdue)
+summary(model1)
+```
+Then we can graph the lines with the data. Plotting both lines, one when d=0 as commercial and one when d=1 as residential
+```{r}
+lineA <- c(model1$coefficients[1],model1$coefficients[2])
+lineC <- c(model1$coefficients[1]+model1$coefficients[3],model1$coefficients[2]+model1$coefficients[4])
+
+plot(overdue$BILL,overdue$LATE, xlab="BILL", ylab = "LATE", main = "Overdue plot")
+points(overdue$BILL[overdue$Type=="RESIDENTIAL"],overdue$LATE[overdue$Type=="RESIDENTIAL"],pch=5,col="blue")
+points(overdue$BILL[overdue$Type=="COMMERCIAL"],overdue$LATE[overdue$Type=="COMMERCIAL"],pch=10,col="red")
+abline(lineA,lwd=3,col="purple") + abline(lineC,lwd=3,col="green")
+```
+c-) 
+the model used to give the lines above is:
+```{r}
+model1<-lm(LATE~BILL+Type+Type:BILL, data=overdue)
+summary(model1)
+```
+
+giving us the following model:
+$Y  =\left\{ \begin{array}{ll} 101.76 - 0.191x & \text{if Commercial }  \\ -99.559 +0.357x & \text{if Residential} \end{array}  \right.$
+
+d-)
+
+```{r}
+modelRed <- lm(LATE~ BILL, data=overdue)
+summary(modelRed)
+```
+
+```{r}
+plot(overdue$BILL,overdue$LATE,xlab="BILL",ylab="LATE")
+points(overdue$BILL[overdue$Type=="RESIDENTIAL"],overdue$LATE[overdue$Type=="RESIDENTIAL"],pch=5,col="red")
+points(overdue$BILL[overdue$Type=="COMMERCIAL"],overdue$LATE[overdue$Type=="COMMERCIAL"],pch=10,col="blue")
+abline(modelRed, lwd=2, lty=2)
+```
+
+```{r}
+anova(modelRed,model1)
+```
+With p-value $< 2.2 \times 10^{-16}$, which is virtually 0, we can conclude that we should reject the null hypothesis.  That means there is strong evidence against the reduced model and in favor of the full model. This means that the model without worrying about weather the type is residential or not, is a worse model than the first one, where we take into account the type of the overdue.
+
+
+#2 (15/20pts) You wanted modelRed1 <- lm(Quality~ EndofHarvest + Rain, data=Latour) instead of what you had.  Your model should have been Y = 6.948 - 0.115x if rain.  
+We load the data as "Latour":
+```{r}
+Latour <- read_csv("Latour.csv")
+View(Latour)
+```
+
+a-)
+We first start by looking at the data, once more, separeted:
+```{r}
+library(ggplot2)
+ptype <- rep(NA, length(44))
+ptype[Latour$Rain=="0"] <-"No"
+ptype[Latour$Rain=="1"] <-"Yes"
+
+qplot(Latour$EndofHarvest,Latour$Quality,color=ptype, shape=ptype)
+```
+
+b-)
+Finding the lines of best fit in this data, our model:
+```{r}
+model2 <-lm(Quality~EndofHarvest+Rain+Rain:EndofHarvest, data=Latour)
+summary(model2)
+```
+
+
+Then we can graph the lines with the data. Plotting both lines, one when d=0 as no rain and one when d=1 as rain
+
+```{r}
+lineY <- c(model2$coefficients[1],model2$coefficients[2])
+lineN <- c(model2$coefficients[1]+model2$coefficients[3],model2$coefficients[2]+model2$coefficients[4])
+
+plot(Latour$EndofHarvest,Latour$Quality, xlab="EndOfHarvest", ylab = "Quality", main = "Latour plot")
+points(Latour$EndofHarvest[Latour$Rain=="0"],Latour$Quality[Latour$Rain=="0"],pch=5,col="blue")
+points(Latour$EndofHarvest[Latour$Rain=="1"],Latour$Quality[Latour$Rain=="1"],pch=10,col="red")
+abline(lineY,lwd=3,col="purple") + abline(lineN,lwd=3,col="green")
+```
+
+c-) 
+the model used to give the lines above is:
+```{r}
+model2 <-lm(Quality~EndofHarvest+Rain+Rain:EndofHarvest, data=Latour)
+summary(model2)
+```
+giving us the following model:
+$Y  =\left\{ \begin{array}{ll} 5.16 - 0.031x & \text{if rain }  \\ 1.787 -0.083x & \text{if Residential} \end{array}  \right.$
+
+
+d-)
+```{r}
+modelRed1 <- lm(Quality~ EndofHarvest, data=Latour)
+summary(modelRed1)
+```
+Now, we can test the ANOVA:
+```{r}
+anova(modelRed1,model2)
+```
+With p-value $< 4.388 \times 10^{-8}$, which is also virtually 0, we can conclude that we should reject the null hypothesis.  That means there is strong evidence against the reduced model and in favor of the full model. This means that the rate of change in quality rating depends on whether there has been any unwanted rain at vintage.
+
+
+B) Estimate the number of days delay to the end of harvest it takes to decrease the quality rating
+by 1 point when there is:
+(i) No unwanted rain at harvest
+
+if no unwanted rain at harvest:
+
+$Quality = \beta_0 + EndoHarvest(\beta_1)$
+$Quality = 5.16 -EndofHarvest*0.031$
+
+when EndofHArvest = 0
+$Quality - 1 = 5.16 -0*0.031 -1$
+$Quality -1 = 4.16$
+
+$4.16 = 5.16 -EndOfHarvest*0.031$
+$EndOfHarvest = (4.16 -5.16)/(-0.031)=32.26$
+Number of days to decrease the quality = 32 days
+
+
+(ii) Some unwanted rain at harvest
+ if there is unwanted rain at harvest
+
+$Quality = \beta_0 + EndOfHarvest*\beta_1 + Rain*\beta_2+ Rain*EndofHarvest*\beta_3$
+Rain = 1
+
+when EndofHArvest = 0
+$Quality -1=5.16 + 1.79$
+
+$Quality -1= 6.95 -1$
+$5.95 = 5.16 -0.031*EndOfHarvest +1.79 - 0.083*EndOfHarvest$
+$EndofHarvest = (5.95-5.16-1.79)/(-0.031-0.083)=8.77$
+Number of days to decrease the quality = 9 days

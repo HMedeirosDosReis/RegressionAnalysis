@@ -1,0 +1,148 @@
+---
+title: "MTH 34500 Final"
+author: "Henrique Medeiros Dos Reis"
+date: "5/3/2021"
+output: html_document
+---
+#1. (10pts) List the four assumptions that we make about the model when we start simple linear analysis.
+
+  a) Y is related to x by the simple linear regression model $Y_i = \beta_0 + \beta_1x_i + e_i$ ($i = 1,...,n$)
+  b) The errors $e_1,...,e_n$ are independent of each other.
+  c) The errors $e_1,...,e_n$  have a common variance $\sigma^2$.
+  d) The errors are normally distributed with mean 0 and variance $\sigma^2$.
+
+
+
+#2. (10pts) What is the difference between a qualitative variable and a quantitative variable?
+
+
+Quantitative Variables are Variables which the values are countable or can be take by measuring something. As example; height, distance, money, and so on. On the other hand, qualitative variables are not a measurement, they are not ordered on numerical scale, they are usually nominal, and when used in regressions translated to "true" or "false", examples are: eye color, male or female, breeds, and so on.
+
+
+The rest of the final requires the file **cars04**, which can be found in the folder "Final".
+
+#3 (70pts) a) Find a linear regression model that predicts SuggestedRetailPrice from DealerCost.  Call this line "price1".
+First, we load the libraries needed, the data, and view what the data is like:
+```{r}
+library(readr)
+Cars <- read_csv("cars04.csv")
+attach(Cars)
+View(Cars)
+```
+Now, we can make the model: 
+```{r}
+price1 <- lm(SuggestedRetailPrice~DealerCost)
+summary(price1)
+```
+our graph then is:
+```{r}
+plot(Cars$DealerCost, Cars$SuggestedRetailPrice, xlab = "DealerCost", ylab = "Suggested Price")+abline(price1, col="red", lty=2)
+```
+
+
+##b) What is the slope of the regression line, and what is its physical interpretion?
+
+The slope of this regression line is: 1.089
+It represents the Suggested Retail Price percentage that will increase according to the the dealer cost.
+
+
+
+##c) What is the y-intercept of the regression line, and what is its physical interpretation?  Does it make sense in the context of  this problem?
+
+The y-intercept is: -61.904. It represents the Suggested Retail price for the 0 as the dealer's cost. It does not make sense in the context of this problem, a dealer will always have a price and will not do it for free. Also, in our data, we do not have any Dealer cost being even close to 0.
+
+
+##d) Find 95% confidence intervals for the slope and the y-intercept.
+ To find confidence intervals for the slope and $y-\text{intercept}$ of our best fit line:
+
+```{r}
+confint(price1)
+```
+
+
+
+The 95% confidence interval for the slope is then $1.08364 < \beta_1 < 1.09404$
+The 95% confidence interval for the y-intercept is then $-223.0728 < y < 99.2643$
+
+
+##e) Does the model seem homoscedastic or heteroscedastic?  Provide evidence to support your answer.
+
+Below, we try and determine if the data is homoscedastic or heteroscedastic.
+```{r}
+sqrtprice1 <-sqrt(abs(rstandard(price1)))
+price_2 <- lm(sqrtprice1~Cars$DealerCost)
+
+summary(price_2)
+```
+Then our graph is: 
+```{r}
+plot(Cars$DealerCost,sqrtprice1) + abline(price_2,col="red")
+```
+
+Even though this graph is not strictly necessary, it can help, but looking at it and the p-value for the slope of the line, $p-\text{value} = 2.48 \times 10^{-14}$, this allows us to reject the null hypothesis andconclude that the data is heteroscedastic.
+
+##f) Are the residuals for "price1" normally distributed?  Provide evidence to support your answer.
+In order to check if the residuals are normally distributed, we use the shapiro.test and the QQplot:
+```{r}
+plot(price1,which=2)
+
+shapiro.test(rstandard(price1))
+```
+The above p-value is virtually 0, which is enough for us to reject the null hypothesis. So we can conclude that the residuals are not normally distributed.
+
+##g)  Is "price1" a valid model?  Explain why or why not using your answers to parts e and f.
+
+We can conclude that this is not a valid model, since the model is heteroscedastic and not normally distributed.
+
+
+
+
+#4. (30pts) It is suggested that the model given by price2, below, be used to find SuggestedRetailPrice from DealerCost.
+
+```{r}
+price2 <-lm(log(SuggestedRetailPrice) ~ log(DealerCost))
+summary(price2)
+```
+
+## a) Find 95% prediction intervals for the SuggestedRetailPrice of cars that has a dealer cost of $25000 and $50000.
+
+Since our model was transformed with log, we need to revert that, therefore, our prediction is:
+```{r}
+exp(predict(price2, newdata=data.frame( DealerCost=c(25000,50000)), interval="prediction",level = 0.95))
+```
+
+
+## b) Are the residuals for "price2" normally distributed? Provide evidence to support your answer.
+
+In order to check if the residuals are normally distributed, we use the shapiro.test:
+```{r}
+plot(price2,which=2)
+
+shapiro.test(rstandard(price2))
+```
+
+with a  p-value of $6.556\times10^{-5}$,which is virtually 0, which is lead us to reject the null hypothesis. So we can conclude that the residuals are not normally distributed.
+
+
+##c) Based on your answer to part b, is price2 a valid model for predicting SuggestedRetailPrice from DealerCost?  Explain why or why not.
+
+From the results above, we can conclude that this is not a valid model, since the residuals are not normally distributed.
+
+#5. (30pts) Using the cars04 data, find a model that predicts HighwayMPG from EngineSize, Cylinders, Horsepower, and Weight.  All coefficients are to be significant at $\alpha = 0.05$.
+##Hint: Two of the terms interact.
+
+When we look in the data, at the variables Engine Size and Cylinders, we can easily see that the number of cylinders are interacting with the engine size. Therefore, instead of normally adding them to our model, we change that to a multiplication sign. Our model then is:
+```{r}
+modelP5 <- lm(HighwayMPG ~ Horsepower+Weight+EngineSize*Cylinders)
+summary(modelP5)
+```
+As we can see in our model, all the p-values are smaller than the  $\alpha = 0.05$ cut. Which means that all the variables that are being used are statistically significant. 
+
+
+
+
+
+
+
+
+

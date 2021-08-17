@@ -1,0 +1,117 @@
+---
+title: "Homework 1"
+author: "H.MedeirosDosReis"
+date: "2/5/2021"
+output: html_document
+---
+
+
+```{r}
+library(readxl)
+Data1 <-read_excel("HW 1 Excel.xlsx")
+```
+
+
+
+**a)** Test $H_0: \beta_0 =  0$ against $H_A: \beta_0 \neq 0$.  Use $\alpha = 0.05$.  Write up your results.
+
+```{r}
+grades <- lm(Final~Test_Average, data=Data1)
+summary(grades)
+```
+
+When we calculate the summary for the grades, it is possible to see see that the t-value for this linear model is equal to 2.732. And it is also possible to see that our p-value is equal to 0.00761. Since the p-value is  smaller than the alpha, which is $\alpha = 0.05$. Therefore, we reject the null hypothesis, $\beta_0 \neq 0$, and we assume that $\beta_0 > 0$ since the line of least squares gives us $\beta_0 = 7.7$.
+
+
+
+**b)** Test $H_0: \beta_1 =  0$ against $H_A: \beta_1 \neq 0$.  Use α= 0.05($\alpha = 0.05$).  Write up your results.
+
+
+First, we check the best fit line for the slope. We make a test value $t = \frac{0.95756-0}{0.04415}$.
+
+
+```{r}
+pt((grades$coefficients[2]-0)/0.04415,87)*2
+```
+Because this is a very large p-value we do not reject the null hypothesis. Therefore we are able to conclude that $\beta_1 = 0$.
+
+Between these two results, we can see that the best fit line is of the form $Y = \beta_0 + X$, and $\beta_0 > 0$.  So according to the data for this model, most part of the students are doing better in the final than in the whole course percentage.
+
+
+**c)** Graph the data and the line of best fit so that your answer looks like the graph below.
+
+```{r}
+plot(Data1)+
+  abline(grades,col="blue",lwd=2)+text(x=15,y=35,"y = 7.7+0.96x")
+```
+
+#Points 15
+**In part b, R automatically test the given null and alternative hypothesis. If you get a p-value bigger than 1, it is wrong.**
+**In part c, you needed to have xlim=c(0,100) and ylim=c(0,100).**
+
+
+**Problem 2**
+Problem 1, Sheather, page 38
+
+1. The web site www.playbill.com provides weekly reports on the box office
+ticket sales for plays on Broadway in New York. We shall consider the data
+for the week October 11–17, 2004 (referred to below as the current week).
+The data are in the form of the gross box office results for the current week
+and the gross box office results for the previous week (i.e., October 3–10,
+2004). The data, plotted in Figure 2.6 , are available on the book web site in
+the file playbill.csv.
+ Fit the following model to the data: Y xe =+ + b b 0 1 where Y is the gross box
+office results for the current week (in $) and x is the gross box office results for the
+previous week (in $). Complete the following tasks:
+
+```{r}
+playbill <-read.csv("Playbill.csv")
+```
+
+
+
+**(a)** Find a 95% confidence interval for the slope of the regression model, $\beta_1$. Is 1 a plausible value for $\beta_1$? Give a reason to support your answer. 
+
+
+```{r}
+WkReport <- lm(CurrentWeek~LastWeek,data = playbill)
+summary(WkReport)
+```
+```{r}
+confint(WkReport, "LastWeek", level = 0.95)
+```
+Since 1 is bellow 1.012666 and above 0.9514971. 1 is plausible for $\beta_1$. The reason is that it falls between the 95% of the confidence interval. 
+
+
+
+**b)** Test the null hypothesis $H_0: \beta_0 =  10000$ against a two-sided alternative.
+Interpret your result.
+
+We should check for  $H_0: \beta_0 =  10000$ against $H_0: \beta_0 \neq 10000$.
+This is a two tailed test with a test value! Therefore, our p-value is 2*Pr(>|t|).
+
+```{r}
+pt(abs((6805-10000)/9929),16,lower.tail = FALSE)*2
+```
+Since we have a large p-value = 0.75 we do not reject the null hypothesis. Therefore we are able to conclude that slope can be equal to 10000.
+
+
+
+**c)** Use the fitted regression model to estimate the gross box office results for the current week (in dollars) for a production with 400,000 dollars in gross box office the previous week. Find a 95% prediction interval for the gross box office results for the current week (in dollars) for a production with 400,000 dollars in gross box office the previous week. Is 450,000 dollars a feasible value for the gross box office results in the current week, for a production with 400,000 dollars in gross box office the previous week? Give a reason to support your answer. 
+
+```{r}
+predict(WkReport, data.frame("LastWeek" = 400000), interval="predict",level = 0.95)
+```
+The value of 450000 is not likely to be a possible value for the gross box office. The upper bound for our predicting would be around 438442. Because of this, we cannot have a value of 450000 dollars for this prediction.  
+
+
+**d)**Some promoters of Broadway plays use the prediction rule that next week’s gross box office results will be equal to this week’s gross box office results. Comment on the appropriateness of this rule. 
+
+```{r}
+plot(WkReport)
+```
+I believe that is is a good rule. Because the correlation from one week to the next one is almost perfect. Even though with some big outliers. When we look at the residuals, we can easyli see that values 6, 12 and 14 were predicted poorly. 
+
+#Points 15
+**In part c, you are checking whether the y-intercept is 10000, not the slope.**
+**In part d, you needed to use your work in parts a and b to determine whether the model y=x was an appropriate one.  The graphs given do not do any of the work necessary to show that.**

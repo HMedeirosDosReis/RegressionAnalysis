@@ -1,0 +1,161 @@
+---
+title: "Homework 6"
+author: "Henrique Medeiros Dos Reis"
+date: "4/23/2021"
+output: html_document
+---
+
+Problem 3, page 297 in Sheather:
+
+Data on 102 male and 100 female athletes were collected at the Australian Institute of Sport.  The data are in ais.txt  downloadand in the HW 6 folder in "Files".  Develop a logistic regression model for gender (y=1 corresponds to female) or (y=0 corresponds to male) based on the following predictors (which is a subset of those available):
+
+RCC - red cell count
+
+WCC - white cell count
+
+BMI - body mass index
+
+(Hint: Use marginal model plots to aid model development.)
+
+
+```{r}
+library(alr4)
+library(car)
+library(readr)
+```
+
+First, let's load the data.
+```{r}
+ais <- read.table("ais.txt", header=TRUE)
+attach(ais)
+```
+Our first binary logistic model will then be:
+```{r}
+m1 <- glm(Sex~RCC+WCC+BMI,family=binomial(),data=ais)
+mmps(m1,layout=c(2,3))
+```
+
+We can see from the graphs above that there are two predictor variables that do not fit well in this model. Let's take a look in the summary
+
+
+```{r}
+summary(m1)
+```
+There is only one variables that is not statistically significant. However, there might be a better model out there. Therefore, we keep analyzing and trying to find a better model
+
+We can create a box plot. We will do the predictor variable by the sex. 0 represents male for the Sex variable and 1 female for Sex variable, and see if we should transform one of the varibles and see the impact of that in our model. 
+```{r}
+#Figure 8.8 on page 286
+par(mfrow=c(2,2))
+boxplot(BMI~Sex, ylab="Body Mass Index",xlab="Sex? (0=Male, 1=Female)")
+boxplot(RCC~Sex, ylab="Red Cell Count",xlab="Sex? (0=Male, 1=Female)")
+boxplot(WCC~Sex, ylab="White Cell Count",xlab="Sex? (0=Male, 1=Female)")
+
+```
+The graphs are separate box plots for each of the three potential predictors for males and females. It is evident from the box plots that the last predictor is reasonably symmetric while the distribution of BMI and RCC are quite skewed.  Therefore, we can conclude that it would be better to include RCC and log(RCC), BMI and log(BMI) as predictors in our model.
+
+
+An important thing that we also need to look for is the variences acording to y. where y =0 is male and y =1 is female. A general rule is that if the variance is within a factor of two, then they can be considered equal
+
+
+```{r}
+var(ais$WCC[Sex==0])
+var(ais$WCC[Sex==1])
+
+var(ais$RCC[Sex==0])
+var(ais$RCC[Sex==1])
+
+var(ais$BMI[Sex==0])
+var(ais$BMI[Sex==1])
+
+```
+For each variable, the variance is approximately the same for the two values of the binary variable $y$ that represents the Sex. Therefore, a quadridic would not be a better model.
+
+
+```{r}
+m2 = glm(Sex~ log(RCC)+WCC+RCC+log(BMI)+BMI,family=binomial(),data=ais)
+mmps(m2,layout=c(2,3))
+```
+This model looks better than m1 because this model fits better BMI to the data. 
+
+Now, we look the summary again:
+```{r}
+summary(m2)
+```
+There are only two variables that are not statically significant. We can still try to get a better model with more statistically significant variables.
+
+ 
+Let's look at the leverage points
+```{r}
+hvalues <- influence(m2)$hat
+stanresDeviance <- residuals(m2)/sqrt(1-hvalues)
+plot(hvalues,stanresDeviance,ylab="Standardized Deviance Residuals",xlab="Leverage Values",ylim=c(-3,3),xlim=c(-0.05,0.7))
+abline(v=2*7/length(Sex),lty=2)
+identify(hvalues,stanresDeviance,cex=0.75)
+```
+
+We can now examinate leverage values and standardized deviance residuals for model m2. We can see that the largest value for the leverage value is approximately 0.37.
+
+We make the model:
+```{r}
+m3 = glm(Sex~ log(WCC)+RCC+log(BMI)+BMI+log(RCC),family=binomial(),data=ais)
+mmps(m3,layout=c(2,3))
+```
+
+And now lets look at the summary:
+```{r}
+summary(m3)
+```
+
+Now, we still got two variables that are not significant, but we got three that are statistically significant. Meaning that this is a slightly better model.
+
+```{r}
+par(mfrow=c(1,1))
+hvalues <- influence(m3)$hat
+stanresDeviance <- residuals(m3)/sqrt(1-hvalues)
+plot(hvalues,stanresDeviance,ylim=c(-3,3),xlim=c(-0.05,0.35))
+abline(v=2*6/length(Sex),lty=2)+abline(h=c(-2,2))
+identify(hvalues,stanresDeviance,cex=0.75)
+```
+
+We can see that this model still have some ouliers, which are the following: 
+```{r}
+fits3 <- m3$fitted.values
+round(fits3[c(14,37,69,135,138,160)],3)
+
+outliers <- rbind(ais[c(14,37,69,135,138,160),])
+```
+
+
+
+
+We will use BIC to see if the model looks better this way.  
+```{r}
+ais.null <- glm(Sex~1, data= ais)
+ais.step <- step(ais.null,scope = ~  log(BMI)+log(WCC)+WCC+BMI+RCC+log(RCC) ,k=log(202))
+```
+Above, we can see which model would be better to use according to the BIC score at the end. 
+
+```{r}
+mmps(ais.step,layout=c(2,3))
+```
+
+
+```{r}
+par(mfrow=c(1,1))
+hvalues <- influence(ais.step)$hat
+stanresDeviance <- residuals(ais.step)/sqrt(1-hvalues)
+plot(hvalues,stanresDeviance,ylim=c(-3,3),xlim=c(-0.05,0.35))
+abline(v=2*6/length(Sex),lty=2)+abline(h=c(-2,2))
+identify(hvalues,stanresDeviance,cex=0.75)
+```
+We can see that there is no outliers.
+
+
+
+Let's look at the summary now:
+
+```{r}
+summary(ais.step)
+```
+This model is definitely better than the ones before. We were able to get 3 out of 3 variables being statistically significant. With all p-values being less than 0.05 we can conclude that this is a good model! 
